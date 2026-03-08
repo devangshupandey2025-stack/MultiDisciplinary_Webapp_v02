@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ML dependencies
+        run: pip install -r ml_pipeline/requirements.txt
+
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Lint Python
+        run: |
+          pip install flake8
+          flake8 ml_pipeline/ backend/ --max-line-length=120 --ignore=E501,W503,E402
+
+      - name: Generate synthetic test data
+        run: python ml_pipeline/scripts/generate_synthetic_data.py --output_dir data/synthetic --num_classes 3 --num_images 10 --img_size 32
+
+      - name: Run ML unit tests
+        run: python -m pytest ml_pipeline/tests/ -v --tb=short
+
+      - name: Smoke training test
+        run: |
+          python ml_pipeline/scripts/train.py \
+            --config ml_pipeline/configs/mobilenet_v3.yaml \
+            --data_dir data/synthetic \
+            --override training.epochs=2 data.batch_size=4 data.num_workers=0 data.img_size=32
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  docker-build:
+    needs: [lint-and-test, frontend-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -f backend/Dockerfile -t plantguard-backend:latest .
+
+      - name: Build frontend Docker image
+        run: docker build -f frontend/Dockerfile -t plantguard-frontend:latest .

@@ -1,0 +1,20 @@
+# Backend Dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+Pillow>=10.0.0
+numpy>=1.24.0
+pydantic>=2.5.0
+supabase>=2.0.0
+python-dotenv>=1.0.0
+prometheus-client>=0.19.0
+sentry-sdk[fastapi]>=1.38.0
+httpx>=0.25.0
+pyyaml>=6.0
+google-genai>=1.0.0
+
+# PyTorch CPU-only (much smaller than CUDA version for deployment)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.1.0
+torchvision>=0.16.0
+timm>=0.9.12

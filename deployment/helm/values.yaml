@@ -1,0 +1,32 @@
+replicaCount: 2
+
+backend:
+  image:
+    repository: plantguard-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  env:
+    SUPABASE_URL: ""
+    SUPABASE_KEY: ""
+    MODELS_DIR: /app/checkpoints
+    GEMINI_API_KEY: ""
+    GEMINI_MODEL: gemini-2.5-flash
+
+frontend:
+  image:
+    repository: plantguard-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 80
+
+ingress:
+  enabled: true
+  host: plantguard.example.com

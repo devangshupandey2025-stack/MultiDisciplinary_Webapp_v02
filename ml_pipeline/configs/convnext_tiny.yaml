@@ -1,0 +1,38 @@
+# ConvNeXt-Tiny Configuration
+model:
+  type: convnext_tiny
+  num_classes: 38
+  pretrained: true
+  dropout: 0.3
+
+data:
+  img_size: 224
+  batch_size: 64
+  augment_level: heavy
+  num_workers: 4
+  use_balanced_sampling: true
+
+training:
+  epochs: 50
+  optimizer: adamw
+  learning_rate: 0.0008
+  weight_decay: 0.0001
+  scheduler: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.05
+  mixup_alpha: 0.2
+  cutmix_prob: 0.5
+  early_stopping_patience: 10
+  early_stopping_metric: val_f1
+  gradient_clip_val: 1.0
+  seed: 456
+
+loss:
+  type: cross_entropy
+  focal_gamma: 2.0
+  focal_alpha: null
+
+checkpoint:
+  save_dir: checkpoints/convnext_tiny
+  save_top_k: 3
+  monitor: val_f1

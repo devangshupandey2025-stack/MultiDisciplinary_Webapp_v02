@@ -1,0 +1,38 @@
+# ResNet50 Configuration
+model:
+  type: resnet50
+  num_classes: 38
+  pretrained: true
+  dropout: 0.3
+
+data:
+  img_size: 224
+  batch_size: 64
+  augment_level: medium
+  num_workers: 4
+  use_balanced_sampling: true
+
+training:
+  epochs: 60
+  optimizer: adamw
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  scheduler: onecycle
+  warmup_epochs: 3
+  label_smoothing: 0.05
+  mixup_alpha: 0.2
+  cutmix_prob: 0.5
+  early_stopping_patience: 12
+  early_stopping_metric: val_f1
+  gradient_clip_val: 1.0
+  seed: 123
+
+loss:
+  type: cross_entropy
+  focal_gamma: 2.0
+  focal_alpha: null
+
+checkpoint:
+  save_dir: checkpoints/resnet50
+  save_top_k: 3
+  monitor: val_f1

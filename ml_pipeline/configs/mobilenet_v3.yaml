@@ -1,0 +1,38 @@
+# MobileNetV3-Large Configuration (Edge/Mobile)
+model:
+  type: mobilenet_v3
+  num_classes: 38
+  pretrained: true
+  dropout: 0.2
+
+data:
+  img_size: 224
+  batch_size: 128
+  augment_level: medium
+  num_workers: 4
+  use_balanced_sampling: true
+
+training:
+  epochs: 80
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.00005
+  scheduler: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.05
+  mixup_alpha: 0.1
+  cutmix_prob: 0.3
+  early_stopping_patience: 15
+  early_stopping_metric: val_f1
+  gradient_clip_val: 1.0
+  seed: 101
+
+loss:
+  type: cross_entropy
+  focal_gamma: 2.0
+  focal_alpha: null
+
+checkpoint:
+  save_dir: checkpoints/mobilenet_v3
+  save_top_k: 3
+  monitor: val_f1

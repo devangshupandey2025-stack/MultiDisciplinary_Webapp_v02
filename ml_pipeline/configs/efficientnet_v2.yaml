@@ -1,0 +1,38 @@
+# EfficientNetV2-S Configuration
+model:
+  type: efficientnet_v2
+  num_classes: 38
+  pretrained: true
+  dropout: 0.3
+
+data:
+  img_size: 384
+  batch_size: 32
+  augment_level: heavy
+  num_workers: 4
+  use_balanced_sampling: true
+
+training:
+  epochs: 60
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.05
+  mixup_alpha: 0.2
+  cutmix_prob: 0.5
+  early_stopping_patience: 10
+  early_stopping_metric: val_f1
+  gradient_clip_val: 1.0
+  seed: 42
+
+loss:
+  type: cross_entropy  # or focal
+  focal_gamma: 2.0
+  focal_alpha: null  # auto from class weights
+
+checkpoint:
+  save_dir: checkpoints/efficientnet_v2
+  save_top_k: 3
+  monitor: val_f1

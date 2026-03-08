@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.env
+
+# ML artifacts (keep checkpoints for deployment)
+data/
+*.onnx
+*.tflite
+*.npy
+wandb/
+test_api.py
+
+# Node
+node_modules/
+frontend/dist/
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
