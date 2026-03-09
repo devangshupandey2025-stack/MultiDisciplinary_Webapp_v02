@@ -184,6 +184,7 @@ export default function PredictionResult({ result, imageUrl }) {
       setShowClassPicker(false);
       toast.success(t('feedback_thanks'));
     } catch (e) {
+      console.error('Feedback error:', e.response?.data || e.message);
       toast.error(t('feedback_error'));
     }
   }

@@ -168,7 +168,7 @@ class SupabaseService:
             return {"total": 0, "diseases_detected": 0}
 
     # --- Training Feedback ---
-    def save_feedback(self, user_id: str, prediction_id: Optional[str],
+    def save_feedback(self, user_id: Optional[str], prediction_id: Optional[str],
                       image_url: str, predicted_class: str,
                       actual_class: str, is_correct: bool) -> dict:
         """Save user feedback on a prediction for model training."""
@@ -176,14 +176,17 @@ class SupabaseService:
             return {"status": "skipped", "reason": "supabase_not_configured"}
         try:
             data = {
-                "user_id": user_id,
-                "prediction_id": prediction_id,
-                "image_url": image_url,
                 "predicted_class": predicted_class,
                 "actual_class": actual_class,
                 "is_correct": is_correct,
                 "created_at": datetime.utcnow().isoformat(),
             }
+            if user_id and user_id != "anonymous":
+                data["user_id"] = user_id
+            if prediction_id:
+                data["prediction_id"] = prediction_id
+            if image_url:
+                data["image_url"] = image_url
             result = self._admin_client.table("training_feedback").insert(data).execute()
             return {"status": "saved", "id": result.data[0]["id"] if result.data else None}
         except Exception as e:

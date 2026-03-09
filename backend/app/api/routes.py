@@ -168,16 +168,21 @@ async def get_classes():
 @router.post("/feedback")
 async def submit_feedback(
     request: FeedbackRequest,
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(default=None),
 ):
     """Submit user feedback on a prediction (for model training)."""
-    token = authorization.replace("Bearer ", "")
-    user = supabase_service.verify_token(token)
-    if not user:
-        raise HTTPException(401, "Invalid token")
+    user_id = None
+    if authorization:
+        token = authorization.replace("Bearer ", "")
+        user = supabase_service.verify_token(token)
+        if user:
+            user_id = user["id"]
+
+    if not user_id:
+        user_id = "anonymous"
 
     result = supabase_service.save_feedback(
-        user_id=user["id"],
+        user_id=user_id,
         prediction_id=request.prediction_id,
         image_url=request.image_url,
         predicted_class=request.predicted_class,
