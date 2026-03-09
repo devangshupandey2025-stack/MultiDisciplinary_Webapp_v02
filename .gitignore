@@ -12,6 +12,7 @@ venv/
 
 # ML artifacts (keep checkpoints for deployment)
 data/
+!ml_pipeline/data/
 *.onnx
 *.tflite
 *.npy
