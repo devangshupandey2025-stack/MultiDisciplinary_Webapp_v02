@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Leaf, Menu, X, LogIn, LogOut, User, Globe } from 'lucide-react';
+import { Leaf, Menu, X, LogIn, LogOut, User, Globe, Download } from 'lucide-react';
 import AuthModal from './AuthModal';
 import { getUser, signOut, onAuthStateChange } from '../services/supabase';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -10,6 +10,7 @@ export default function Layout({ children }) {
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
   const location = useLocation();
   const { t, lang, changeLang, LANGUAGES } = useLanguage();
 
@@ -30,6 +31,25 @@ export default function Layout({ children }) {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => setInstallPrompt(null));
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setInstallPrompt(null);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -109,6 +129,21 @@ export default function Layout({ children }) {
                   ))}
                 </select>
               </div>
+
+              {installPrompt && (
+                <button
+                  onClick={handleInstall}
+                  className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-all hover:scale-105 ml-2"
+                  style={{
+                    color: scrolled || !isHome ? '#fff' : '#2C3E2D',
+                    background: scrolled || !isHome ? 'var(--color-forest)' : 'rgba(255,255,255,0.9)',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {t('install_app')}
+                </button>
+              )}
 
               {user ? (
                 <div className="flex items-center gap-3 ml-4">
@@ -200,6 +235,15 @@ export default function Layout({ children }) {
                   style={{ color: scrolled || !isHome ? 'var(--color-forest)' : 'white' }}
                 >
                   <LogIn className="w-4 h-4" /> {t('nav_signin')}
+                </button>
+              )}
+              {installPrompt && (
+                <button
+                  onClick={() => { handleInstall(); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm text-left font-semibold"
+                  style={{ color: scrolled || !isHome ? 'var(--color-forest)' : 'white' }}
+                >
+                  <Download className="w-4 h-4" /> {t('install_app')}
                 </button>
               )}
             </div>

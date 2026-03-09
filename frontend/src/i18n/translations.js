@@ -6,6 +6,7 @@ const translations = {
     nav_about: 'About',
     nav_signin: 'Sign In',
     nav_signout: 'Sign Out',
+    install_app: 'Install App',
     nav_brand: 'PlantGuard AI',
 
     // HomePage Hero
@@ -138,6 +139,7 @@ const translations = {
     nav_about: 'जानकारी',
     nav_signin: 'साइन इन',
     nav_signout: 'साइन आउट',
+    install_app: 'ऐप इंस्टॉल करें',
     nav_brand: 'प्लांटगार्ड AI',
 
     hero_title_1: 'अपनी फसलों की',
@@ -259,6 +261,7 @@ const translations = {
     nav_about: 'பற்றி',
     nav_signin: 'உள்நுழை',
     nav_signout: 'வெளியேறு',
+    install_app: 'ஆப் நிறுவு',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'உங்கள் பயிர்களை',
@@ -380,6 +383,7 @@ const translations = {
     nav_about: 'గురించి',
     nav_signin: 'సైన్ ఇన్',
     nav_signout: 'సైన్ అవుట్',
+    install_app: 'యాప్ ఇన్‌స్టాల్',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'మీ పంటలను',
@@ -499,6 +503,7 @@ const translations = {
     nav_about: 'সম্পর্কে',
     nav_signin: 'সাইন ইন',
     nav_signout: 'সাইন আউট',
+    install_app: 'অ্যাপ ইনস্টল',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'আপনার ফসল',
@@ -620,6 +625,7 @@ const translations = {
     nav_about: 'माहिती',
     nav_signin: 'साइन इन',
     nav_signout: 'साइन आउट',
+    install_app: 'अ‍ॅप इन्स्टॉल करा',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'तुमच्या पिकांचे',
@@ -741,6 +747,7 @@ const translations = {
     nav_about: 'ಕುರಿತು',
     nav_signin: 'ಸೈನ್ ಇನ್',
     nav_signout: 'ಸೈನ್ ಔಟ್',
+    install_app: 'ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'ನಿಮ್ಮ ಬೆಳೆಗಳನ್ನು',
@@ -862,6 +869,7 @@ const translations = {
     nav_about: 'વિશે',
     nav_signin: 'સાઇન ઇન',
     nav_signout: 'સાઇન આઉટ',
+    install_app: 'એપ ઇન્સ્ટોલ કરો',
     nav_brand: 'PlantGuard AI',
 
     hero_title_1: 'તમારા પાકનું',
