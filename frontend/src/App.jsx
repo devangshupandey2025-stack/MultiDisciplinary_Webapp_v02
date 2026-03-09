@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { LanguageProvider } from './i18n/LanguageContext'
+import { Toaster } from 'sonner'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
@@ -9,6 +10,14 @@ function App() {
   return (
     <LanguageProvider>
       <Router>
+        <Toaster
+          position="top-center"
+          richColors
+          toastOptions={{
+            style: { fontFamily: 'Inter, sans-serif' },
+            duration: 3000,
+          }}
+        />
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />

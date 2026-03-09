@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause, Loader } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { generateTTS } from '../services/api';
+import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -104,8 +105,9 @@ export default function PredictionResult({ result, imageUrl }) {
 
       const disease = formatClassName(result.class);
       pdf.save(`PlantGuard_Report_${disease.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+      toast.success(t('download_success'));
     } catch {
-      // Fallback: open print dialog
+      toast.error(t('download_error'));
       window.print();
     } finally {
       setIsDownloading(false);

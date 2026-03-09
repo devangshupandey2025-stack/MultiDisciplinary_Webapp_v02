@@ -3,6 +3,7 @@ import { Clock, Leaf, AlertCircle, ChevronDown, ChevronUp, Download, Volume2, Sq
 import { getHistory, generateTTS } from '../services/api';
 import { getUser } from '../services/supabase';
 import { useLanguage } from '../i18n/LanguageContext';
+import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -221,7 +222,9 @@ function HistoryItemDetails({ item, validation, t, lang }) {
 
       const disease = formatClassName(item.prediction_class);
       pdf.save(`PlantGuard_History_${disease.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+      toast.success(t('download_success'));
     } catch {
+      toast.error(t('download_error'));
       window.print();
     } finally {
       setIsDownloading(false);
