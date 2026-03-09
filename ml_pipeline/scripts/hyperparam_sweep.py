@@ -3,7 +3,6 @@ Optuna hyperparameter sweep configuration.
 Usage:
   python ml_pipeline/scripts/hyperparam_sweep.py --config ml_pipeline/configs/efficientnet_v2.yaml --data_dir data/plantvillage --n_trials 10
 """
-import os
 import sys
 import argparse
 from pathlib import Path

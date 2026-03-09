@@ -2,7 +2,6 @@
 Gemini AI cross-validation service.
 Validates MobileNetV3 predictions using Google Gemini with multimodal (image + text) input.
 """
-import io
 import json
 import os
 import time
@@ -18,7 +17,7 @@ RETRY_BACKOFF = [1, 2, 4]  # seconds between retries
 AVAILABILITY_RECHECK_INTERVAL = 300  # re-check every 5 minutes if unavailable
 
 
-SYSTEM_PROMPT = """You are an expert plant pathologist AI assistant. Your role is to cross-validate 
+SYSTEM_PROMPT = """You are an expert plant pathologist AI assistant. Your role is to cross-validate
 plant disease predictions made by a MobileNetV3 computer vision model.
 
 You will receive:
@@ -83,7 +82,7 @@ def _parse_gemini_response(response_text: str) -> Optional[dict]:
     # Strip markdown code fences if present
     if text.startswith("```"):
         lines = text.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
+        lines = [ln for ln in lines if not ln.strip().startswith("```")]
         text = "\n".join(lines).strip()
 
     try:

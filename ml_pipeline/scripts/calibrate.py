@@ -16,7 +16,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import log_loss
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

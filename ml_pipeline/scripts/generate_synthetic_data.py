@@ -27,7 +27,7 @@ SAMPLE_CLASSES = [
 
 
 def generate_synthetic_dataset(output_dir: str, num_classes: int = 5,
-                                num_images_per_class: int = 10, img_size: int = 64):
+                               num_images_per_class: int = 10, img_size: int = 64):
     """Generate small synthetic images for testing."""
     classes = SAMPLE_CLASSES[:num_classes]
 
@@ -86,7 +86,7 @@ def main():
     args = parser.parse_args()
 
     generate_synthetic_dataset(args.output_dir, args.num_classes,
-                                args.num_images, args.img_size)
+                               args.num_images, args.img_size)
 
 
 if __name__ == "__main__":

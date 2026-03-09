@@ -5,13 +5,11 @@ Designed to run on CPU (head has ~500K params).
 """
 import os
 import io
-import json
 import time
 import logging
 import threading
 from typing import Optional, Dict, List
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import torch

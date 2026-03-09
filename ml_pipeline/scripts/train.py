@@ -5,15 +5,13 @@ MixUp/CutMix, early stopping, checkpoint saving, logit extraction.
 
 Usage:
   python ml_pipeline/scripts/train.py --config ml_pipeline/configs/efficientnet_v2.yaml --data_dir data/plantvillage
-  
+
   # Multi-GPU
   torchrun --nproc_per_node=2 ml_pipeline/scripts/train.py --config ml_pipeline/configs/efficientnet_v2.yaml --data_dir data/plantvillage
 """
-import os
 import sys
 import argparse
 import json
-import time
 from pathlib import Path
 
 import numpy as np
@@ -22,12 +20,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.metrics import f1_score, classification_report
+from sklearn.metrics import f1_score
 import yaml
 from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from ml_pipeline.data.dataset import create_dataloaders, MixUpCutMix, PLANTVILLAGE_CLASSES
+from ml_pipeline.data.dataset import create_dataloaders, MixUpCutMix
 from ml_pipeline.models.architectures import create_model
 
 
@@ -46,9 +44,9 @@ class FocalLoss(nn.Module):
             pt = torch.exp(-ce)
             focal = ((1 - pt) ** self.gamma * ce).sum(dim=1).mean()
             return focal
-        
+
         ce = nn.functional.cross_entropy(logits, targets, reduction='none',
-                                          label_smoothing=self.label_smoothing)
+                                         label_smoothing=self.label_smoothing)
         pt = torch.exp(-ce)
         focal = ((1 - pt) ** self.gamma * ce).mean()
         return focal

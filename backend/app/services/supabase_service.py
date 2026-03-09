@@ -1,7 +1,7 @@
 """Supabase service for authentication and data storage."""
 import os
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List
 from datetime import datetime
 import json
 

@@ -56,8 +56,6 @@ def plot_confusion_matrix(y_true, y_pred, class_names, save_path, normalize=True
 
 def robustness_test(model, test_loader, device, perturbation="brightness", severity=0.3):
     """Simple robustness test with brightness/blur perturbation."""
-    from torchvision import transforms
-    
     model.eval()
     all_preds, all_labels = [], []
 
@@ -72,7 +70,7 @@ def robustness_test(model, test_loader, device, perturbation="brightness", sever
             import torch.nn.functional as F
             kernel_size = int(severity * 10) * 2 + 1
             images = F.avg_pool2d(images, kernel_size, stride=1,
-                                   padding=kernel_size // 2)
+                                  padding=kernel_size // 2)
 
         with torch.no_grad():
             logits = model(images)
@@ -103,7 +101,7 @@ def full_evaluation(probs: np.ndarray, labels: np.ndarray,
     ace = compute_ace(probs, labels)
 
     print(f"\n{'='*50}")
-    print(f"EVALUATION RESULTS")
+    print("EVALUATION RESULTS")
     print(f"{'='*50}")
     print(f"Top-1 Accuracy:  {acc:.4f}")
     print(f"Top-3 Accuracy:  {top3_acc:.4f}")
@@ -130,13 +128,13 @@ def full_evaluation(probs: np.ndarray, labels: np.ndarray,
             low_f1_classes.append((name, f1[i]))
 
     if low_f1_classes:
-        print(f"\n⚠️  Classes with F1 < 0.85:")
+        print("\n⚠️  Classes with F1 < 0.85:")
         for name, score in sorted(low_f1_classes, key=lambda x: x[1]):
             print(f"  {name}: F1={score:.4f}")
 
     # Classification report
     report = classification_report(labels, preds, target_names=class_names[:len(np.unique(labels))],
-                                    zero_division=0)
+                                   zero_division=0)
     print(f"\n{report}")
 
     # Confusion matrix

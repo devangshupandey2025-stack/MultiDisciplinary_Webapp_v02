@@ -14,13 +14,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, accuracy_score
 import lightgbm as lgb
 import joblib
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ml_pipeline.data.dataset import PlantDiseaseDataset, get_val_transforms
@@ -152,7 +150,7 @@ class StackedEnsemble:
 
         # Generate OOF predictions using k-fold
         skf = StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=42)
-        
+
         # Stack all model logits: (N, num_models * num_classes)
         model_names = sorted(all_model_logits.keys())
         stacked_logits = np.hstack([all_model_logits[name] for name in model_names])

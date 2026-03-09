@@ -5,7 +5,7 @@ Returns probabilities with uncertainty estimates and image metadata for LLM vali
 import os
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 import torch
