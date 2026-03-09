@@ -4,7 +4,7 @@ import os
 import time
 from typing import Optional
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Header, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Header, Query, BackgroundTasks
 from fastapi.responses import Response
 from pydantic import BaseModel
 from PIL import Image
@@ -98,6 +98,7 @@ async def predict_disease(
             gemini_validation = GeminiValidation(**validation_result)
 
     # Save to history if authenticated
+    image_url = None
     if authorization and supabase_service.is_available:
         token = authorization.replace("Bearer ", "")
         user = supabase_service.verify_token(token)
@@ -116,6 +117,7 @@ async def predict_disease(
         uncertainty=result["uncertainty"],
         top_k=[{"class": p["class"], "probability": p["probability"]} for p in result["top_k"]],
         gemini_validation=gemini_validation,
+        image_url=image_url,
     )
 
 
@@ -207,6 +209,7 @@ async def feedback_stats():
 
 @router.post("/admin/retrain")
 async def retrain_model(
+    background_tasks: BackgroundTasks,
     authorization: str = Header(...),
 ):
     """Trigger model fine-tuning using accumulated feedback data."""
@@ -224,14 +227,31 @@ async def retrain_model(
         raise HTTPException(400, f"Need at least 5 feedback samples, got {len(feedback_data)}")
 
     predictor = get_predictor()
-    result = finetuner.finetune(predictor, feedback_data, supabase_service)
 
-    if result["status"] == "success":
-        # Model is already updated in-memory (same object)
-        predictor.model.eval()
-        print(f"Model fine-tuned: v{result['version']}, {result['samples_used']} samples, acc={result['final_accuracy']:.2%}")
+    def run_training():
+        result = finetuner.finetune(predictor, feedback_data, supabase_service)
+        if result["status"] == "success":
+            predictor.model.eval()
+            print(f"Model fine-tuned: v{result['version']}, {result['samples_used']} samples, acc={result['final_accuracy']:.2%}")
 
-    return result
+    background_tasks.add_task(run_training)
+    return {"status": "training_started", "samples_queued": len(feedback_data)}
+
+
+@router.get("/admin/retrain/status")
+async def retrain_status(authorization: str = Header(...)):
+    """Check current training status."""
+    token = authorization.replace("Bearer ", "")
+    user = supabase_service.verify_token(token)
+    if not user:
+        raise HTTPException(401, "Invalid token")
+
+    finetuner = get_finetuner()
+    return {
+        "is_training": finetuner.is_training,
+        "last_training": finetuner.last_training,
+        "total_runs": len(finetuner.training_history),
+    }
 
 
 # Language code mapping for Sarvam TTS

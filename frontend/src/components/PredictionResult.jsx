@@ -190,7 +190,7 @@ export default function PredictionResult({ result, imageUrl }) {
         predicted_class: result.class,
         actual_class: actualClass,
         is_correct: isCorrect,
-        image_url: imageUrl || '',
+        image_url: result.image_url || imageUrl || '',
       });
       setFeedbackSent(true);
       setShowClassPicker(false);

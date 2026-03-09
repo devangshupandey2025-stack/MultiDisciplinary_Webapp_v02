@@ -40,6 +40,7 @@ class PredictionResponse(BaseModel):
     uncertainty: float = Field(..., ge=0, le=1, description="Uncertainty score (0=confident, 1=uncertain)")
     top_k: List[PredictionItem] = Field(default_factory=list, description="Top-k predictions")
     gemini_validation: Optional[GeminiValidation] = Field(default=None, description="Gemini AI cross-validation report")
+    image_url: Optional[str] = Field(default=None, description="Supabase storage URL of the uploaded image")
 
     class Config:
         populate_by_name = True
