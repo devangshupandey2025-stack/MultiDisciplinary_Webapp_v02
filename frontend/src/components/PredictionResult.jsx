@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause, Loader, Check, X, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -8,6 +8,16 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const COLORS = ['#2C3E2D', '#6B8F71', '#A8C5AA', '#C9A96E', '#8B7355'];
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return width;
+}
 
 export default function PredictionResult({ result, imageUrl }) {
   const { t, lang } = useLanguage();
@@ -22,6 +32,8 @@ export default function PredictionResult({ result, imageUrl }) {
   const audioRef = useRef(null);
   const audioUrlRef = useRef(null);
   const reportRef = useRef(null);
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth < 640;
 
   useEffect(() => {
     return () => {
@@ -206,7 +218,7 @@ export default function PredictionResult({ result, imageUrl }) {
   return (
     <div ref={reportRef} className="space-y-6">
       {/* Main prediction card */}
-      <div className="glass-card p-6 md:p-8 space-y-6">
+      <div className="glass-card p-4 sm:p-6 md:p-8 space-y-6 fade-in-up">
         <div className="flex flex-col md:flex-row gap-6">
           {imageUrl && (
             <div className="flex-shrink-0">
@@ -281,29 +293,52 @@ export default function PredictionResult({ result, imageUrl }) {
 
         {/* Top-K chart */}
         {chartData.length > 1 && (
-          <div>
+          <div className="fade-in-up" style={{ animationDelay: '0.3s' }}>
             <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-forest)' }}>
               {t('result_top_predictions')}
             </h4>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 100 }}>
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: '#6B7B6D' }} />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#2C3E2D' }} width={100} />
-                <Tooltip formatter={(v) => `${v}%`} />
-                <Bar dataKey="probability" radius={[0, 6, 6, 0]}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {isMobile ? (
+              <div className="space-y-3">
+                {chartData.map((item, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="font-medium truncate mr-2" style={{ color: 'var(--color-forest)', maxWidth: '65%' }}>
+                        {item.name}
+                      </span>
+                      <span className="font-semibold whitespace-nowrap" style={{ color: COLORS[i % COLORS.length] }}>
+                        {item.probability}%
+                      </span>
+                    </div>
+                    <div className="w-full rounded-full h-2.5" style={{ background: 'rgba(168,197,170,0.12)' }}>
+                      <div
+                        className="h-2.5 rounded-full transition-all duration-700"
+                        style={{ width: `${item.probability}%`, background: COLORS[i % COLORS.length] }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 10 }}>
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: '#6B7B6D' }} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#2C3E2D' }} width={80} />
+                  <Tooltip formatter={(v) => `${v}%`} />
+                  <Bar dataKey="probability" radius={[0, 6, 6, 0]} animationDuration={800}>
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         )}
       </div>
 
       {/* Validation Report */}
       {validation && (
-        <div className="glass-card p-6 md:p-8 space-y-5">
+        <div className="glass-card p-4 sm:p-6 md:p-8 space-y-5 fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Bot className="w-5 h-5" style={{ color: 'var(--color-sage)' }} />
             <h4 className="text-lg" style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-forest)' }}>
@@ -321,7 +356,7 @@ export default function PredictionResult({ result, imageUrl }) {
           </div>
 
           {/* Download & TTS action buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <button
               onClick={handleDownload}
               disabled={isDownloading}
@@ -437,7 +472,7 @@ export default function PredictionResult({ result, imageUrl }) {
 
       {/* Feedback Section */}
       {!feedbackSent ? (
-        <div className="rounded-2xl p-4 border mt-4" style={{ background: 'rgba(107,143,113,0.04)', borderColor: 'rgba(168,197,170,0.2)' }}>
+        <div className="rounded-2xl p-4 border mt-4 fade-in-up" style={{ animationDelay: '0.4s', background: 'rgba(107,143,113,0.04)', borderColor: 'rgba(168,197,170,0.2)' }}>
           <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-forest)' }}>
             {t('feedback_question')}
           </p>

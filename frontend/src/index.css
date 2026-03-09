@@ -326,8 +326,57 @@ h1, h2, h3, .serif {
 @media (max-width: 640px) {
   .hero-section { min-height: 70vh; }
   .upload-zone { padding: 2rem 1.25rem; }
-  .glass-card { border-radius: 1.25rem; }
+  .glass-card { border-radius: 1.25rem; padding: 1rem; }
   .feature-card { padding: 1.75rem 1.5rem; }
+}
+
+/* ===== Animations ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.4s ease-out both;
+}
+
+.pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }
 
 /* ===== Scrollbar ===== */
