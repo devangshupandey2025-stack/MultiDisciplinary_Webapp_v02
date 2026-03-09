@@ -53,4 +53,19 @@ export const generateTTS = async (text, language = 'en', pace = 1.0) => {
   return response.data;
 };
 
+export const submitFeedback = async (feedbackData) => {
+  const response = await api.post('/feedback', feedbackData);
+  return response.data;
+};
+
+export const getFeedbackStats = async () => {
+  const response = await api.get('/feedback/stats');
+  return response.data;
+};
+
+export const triggerRetrain = async () => {
+  const response = await api.post('/admin/retrain', {}, { timeout: 300000 });
+  return response.data;
+};
+
 export default api;

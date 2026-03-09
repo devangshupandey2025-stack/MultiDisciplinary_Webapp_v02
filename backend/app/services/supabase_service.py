@@ -167,6 +167,73 @@ class SupabaseService:
         except Exception:
             return {"total": 0, "diseases_detected": 0}
 
+    # --- Training Feedback ---
+    def save_feedback(self, user_id: str, prediction_id: Optional[str],
+                      image_url: str, predicted_class: str,
+                      actual_class: str, is_correct: bool) -> dict:
+        """Save user feedback on a prediction for model training."""
+        if not self.is_available:
+            return {"status": "skipped", "reason": "supabase_not_configured"}
+        try:
+            data = {
+                "user_id": user_id,
+                "prediction_id": prediction_id,
+                "image_url": image_url,
+                "predicted_class": predicted_class,
+                "actual_class": actual_class,
+                "is_correct": is_correct,
+                "created_at": datetime.utcnow().isoformat(),
+            }
+            result = self._admin_client.table("training_feedback").insert(data).execute()
+            return {"status": "saved", "id": result.data[0]["id"] if result.data else None}
+        except Exception as e:
+            logger.error(f"Failed to save feedback: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def get_feedback(self, limit: int = 500) -> List[dict]:
+        """Get all training feedback (for fine-tuning)."""
+        if not self.is_available:
+            return []
+        try:
+            result = (
+                self._admin_client.table("training_feedback")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return result.data or []
+        except Exception as e:
+            logger.error(f"Failed to get feedback: {e}")
+            return []
+
+    def get_feedback_stats(self) -> dict:
+        """Get feedback statistics for training dashboard."""
+        if not self.is_available:
+            return {"total": 0, "correct": 0, "incorrect": 0, "classes": {}}
+        try:
+            result = (
+                self._admin_client.table("training_feedback")
+                .select("*")
+                .execute()
+            )
+            data = result.data or []
+            correct = sum(1 for d in data if d.get("is_correct"))
+            incorrect = len(data) - correct
+            classes = {}
+            for d in data:
+                cls = d.get("actual_class", "unknown")
+                classes[cls] = classes.get(cls, 0) + 1
+            return {
+                "total": len(data),
+                "correct": correct,
+                "incorrect": incorrect,
+                "classes": classes,
+            }
+        except Exception as e:
+            logger.error(f"Failed to get feedback stats: {e}")
+            return {"total": 0, "correct": 0, "incorrect": 0, "classes": {}}
+
 
 # Global instance
 supabase_service = SupabaseService()

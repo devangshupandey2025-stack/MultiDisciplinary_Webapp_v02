@@ -13,6 +13,7 @@ import base64
 
 from backend.app.ml.predictor import get_predictor
 from backend.app.ml.gemini_validator import get_validator
+from backend.app.ml.finetuner import get_finetuner
 from backend.app.models.schemas import (
     PredictionResponse, HealthResponse, GeminiValidation
 )
@@ -32,6 +33,14 @@ class TTSRequest(BaseModel):
     text: str
     language: str = "en"
     pace: float = 1.0
+
+
+class FeedbackRequest(BaseModel):
+    predicted_class: str
+    actual_class: str
+    is_correct: bool
+    image_url: str = ""
+    prediction_id: Optional[str] = None
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -154,6 +163,70 @@ async def get_classes():
     """Return list of supported disease classes."""
     predictor = get_predictor()
     return {"classes": predictor.class_names, "count": len(predictor.class_names)}
+
+
+@router.post("/feedback")
+async def submit_feedback(
+    request: FeedbackRequest,
+    authorization: str = Header(...),
+):
+    """Submit user feedback on a prediction (for model training)."""
+    token = authorization.replace("Bearer ", "")
+    user = supabase_service.verify_token(token)
+    if not user:
+        raise HTTPException(401, "Invalid token")
+
+    result = supabase_service.save_feedback(
+        user_id=user["id"],
+        prediction_id=request.prediction_id,
+        image_url=request.image_url,
+        predicted_class=request.predicted_class,
+        actual_class=request.actual_class,
+        is_correct=request.is_correct,
+    )
+    if result.get("status") == "error":
+        raise HTTPException(500, result.get("error", "Failed to save feedback"))
+    return result
+
+
+@router.get("/feedback/stats")
+async def feedback_stats():
+    """Get feedback statistics and model training status."""
+    stats = supabase_service.get_feedback_stats()
+    finetuner = get_finetuner()
+    stats["is_training"] = finetuner.is_training
+    stats["last_training"] = finetuner.last_training
+    stats["can_retrain"] = stats["total"] >= 5
+    return stats
+
+
+@router.post("/admin/retrain")
+async def retrain_model(
+    authorization: str = Header(...),
+):
+    """Trigger model fine-tuning using accumulated feedback data."""
+    token = authorization.replace("Bearer ", "")
+    user = supabase_service.verify_token(token)
+    if not user:
+        raise HTTPException(401, "Invalid token")
+
+    finetuner = get_finetuner()
+    if finetuner.is_training:
+        raise HTTPException(409, "Training already in progress")
+
+    feedback_data = supabase_service.get_feedback()
+    if len(feedback_data) < 5:
+        raise HTTPException(400, f"Need at least 5 feedback samples, got {len(feedback_data)}")
+
+    predictor = get_predictor()
+    result = finetuner.finetune(predictor, feedback_data, supabase_service)
+
+    if result["status"] == "success":
+        # Model is already updated in-memory (same object)
+        predictor.model.eval()
+        print(f"Model fine-tuned: v{result['version']}, {result['samples_used']} samples, acc={result['final_accuracy']:.2%}")
+
+    return result
 
 
 # Language code mapping for Sarvam TTS

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Leaf, Shield, Cpu, BarChart3, Globe, Bot } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import ModelTraining from '../components/ModelTraining';
 
 function useScrollReveal() {
   const ref = useRef(null);
@@ -85,6 +86,11 @@ export default function AboutPage() {
             <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{desc}</p>
           </div>
         ))}
+      </div>
+
+      {/* Model Training Dashboard */}
+      <div className="mb-14">
+        <ModelTraining />
       </div>
 
       {/* Model Card */}

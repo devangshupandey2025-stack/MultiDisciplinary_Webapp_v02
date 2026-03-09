@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause, Loader } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause, Loader, Check, X, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
-import { generateTTS } from '../services/api';
+import { generateTTS, submitFeedback, getClasses } from '../services/api';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -16,6 +16,9 @@ export default function PredictionResult({ result, imageUrl }) {
   const [speechRate, setSpeechRate] = useState(1);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isLoadingTTS, setIsLoadingTTS] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [showClassPicker, setShowClassPicker] = useState(false);
+  const [allClasses, setAllClasses] = useState([]);
   const audioRef = useRef(null);
   const audioUrlRef = useRef(null);
   const reportRef = useRef(null);
@@ -164,6 +167,33 @@ export default function PredictionResult({ result, imageUrl }) {
     if (audioRef.current && isSpeaking) {
       audioRef.current.playbackRate = rate;
     }
+  }
+
+  async function handleFeedback(isCorrect, selectedClass = null) {
+    const actualClass = isCorrect ? result.class : selectedClass;
+    if (!actualClass) return;
+
+    try {
+      await submitFeedback({
+        predicted_class: result.class,
+        actual_class: actualClass,
+        is_correct: isCorrect,
+        image_url: imageUrl || '',
+      });
+      setFeedbackSent(true);
+      setShowClassPicker(false);
+      toast.success(t('feedback_thanks'));
+    } catch (e) {
+      toast.error(t('feedback_error'));
+    }
+  }
+
+  async function loadClasses() {
+    if (allClasses.length > 0) return;
+    try {
+      const data = await getClasses();
+      setAllClasses(data.classes || []);
+    } catch { /* ignore */ }
   }
 
   const chartData = (result.top_k || []).map((item, i) => ({
@@ -401,6 +431,60 @@ export default function PredictionResult({ result, imageUrl }) {
               <p className="text-sm leading-relaxed" style={{ color: 'var(--color-forest)' }}>{validation.treatment_advice}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Feedback Section */}
+      {!feedbackSent ? (
+        <div className="rounded-2xl p-4 border mt-4" style={{ background: 'rgba(107,143,113,0.04)', borderColor: 'rgba(168,197,170,0.2)' }}>
+          <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-forest)' }}>
+            {t('feedback_question')}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleFeedback(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105"
+              style={{ background: '#22c55e', color: '#fff' }}
+            >
+              <Check className="w-4 h-4" /> {t('feedback_correct')}
+            </button>
+            <button
+              onClick={() => { setShowClassPicker(true); loadClasses(); }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105"
+              style={{ background: '#ef4444', color: '#fff' }}
+            >
+              <X className="w-4 h-4" /> {t('feedback_wrong')}
+            </button>
+          </div>
+
+          {showClassPicker && (
+            <div className="mt-3">
+              <p className="text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                {t('feedback_select_class')}
+              </p>
+              <select
+                onChange={(e) => handleFeedback(false, e.target.value)}
+                defaultValue=""
+                className="w-full rounded-xl px-3 py-2 text-sm border"
+                style={{
+                  background: 'var(--color-warm)',
+                  color: 'var(--color-forest)',
+                  borderColor: 'rgba(168,197,170,0.3)',
+                }}
+              >
+                <option value="" disabled>-- {t('feedback_select_class')} --</option>
+                {allClasses.map((cls) => (
+                  <option key={cls} value={cls}>{formatClassName(cls)}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-2xl p-4 mt-4 text-center" style={{ background: 'rgba(34,197,94,0.08)' }}>
+          <p className="text-sm font-medium" style={{ color: '#22c55e' }}>
+            ✓ {t('feedback_submitted')}
+          </p>
         </div>
       )}
 
