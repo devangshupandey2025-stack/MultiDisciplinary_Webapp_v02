@@ -45,4 +45,12 @@ export const getStats = async () => {
   return response.data;
 };
 
+export const generateTTS = async (text, language = 'en', pace = 1.0) => {
+  const response = await api.post('/tts', { text, language, pace }, {
+    responseType: 'blob',
+    timeout: 30000,
+  });
+  return response.data;
+};
+
 export default api;

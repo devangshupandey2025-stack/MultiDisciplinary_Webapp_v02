@@ -5,7 +5,11 @@ import time
 from typing import Optional
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Header, Query
+from fastapi.responses import Response
+from pydantic import BaseModel
 from PIL import Image
+import httpx
+import base64
 
 from backend.app.ml.predictor import get_predictor
 from backend.app.ml.gemini_validator import get_validator
@@ -15,6 +19,19 @@ from backend.app.models.schemas import (
 from backend.app.services.supabase_service import supabase_service
 
 router = APIRouter()
+
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
+SARVAM_TTS_SPEAKER = os.getenv("SARVAM_TTS_SPEAKER", "anushka")
+SARVAM_TTS_MODEL = os.getenv("SARVAM_TTS_MODEL", "bulbul:v2")
+# Max chars per TTS request (bulbul:v2=1500, v3=2500)
+SARVAM_MAX_CHARS = 1500
+
+
+class TTSRequest(BaseModel):
+    text: str
+    language: str = "en"
+    pace: float = 1.0
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -137,3 +154,68 @@ async def get_classes():
     """Return list of supported disease classes."""
     predictor = get_predictor()
     return {"classes": predictor.class_names, "count": len(predictor.class_names)}
+
+
+# Language code mapping for Sarvam TTS
+LANG_TO_SARVAM = {
+    "en": "en-IN", "hi": "hi-IN", "ta": "ta-IN", "te": "te-IN",
+    "bn": "bn-IN", "mr": "mr-IN", "kn": "kn-IN", "gu": "gu-IN",
+}
+
+
+@router.post("/tts")
+async def text_to_speech(request: TTSRequest):
+    """Convert text to speech using Sarvam AI TTS (Indian language support)."""
+    if not SARVAM_API_KEY:
+        raise HTTPException(503, "TTS service not configured (SARVAM_API_KEY missing)")
+
+    text = request.text.strip()
+    if not text:
+        raise HTTPException(400, "Text cannot be empty")
+
+    target_lang = LANG_TO_SARVAM.get(request.language, "en-IN")
+    pace = max(0.5, min(2.0, request.pace))
+
+    # Truncate text to max chars (Sarvam limit)
+    if len(text) > SARVAM_MAX_CHARS:
+        text = text[:SARVAM_MAX_CHARS]
+
+    payload = {
+        "text": text,
+        "target_language_code": target_lang,
+        "speaker": SARVAM_TTS_SPEAKER,
+        "model": SARVAM_TTS_MODEL,
+        "pace": pace,
+        "speech_sample_rate": 22050,
+        "enable_preprocessing": True,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                SARVAM_TTS_URL,
+                json=payload,
+                headers={
+                    "api-subscription-key": SARVAM_API_KEY,
+                    "Content-Type": "application/json",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        audios = data.get("audios", [])
+        if not audios:
+            raise HTTPException(500, "No audio returned from TTS service")
+
+        audio_bytes = base64.b64decode(audios[0])
+        return Response(
+            content=audio_bytes,
+            media_type="audio/wav",
+            headers={"Content-Disposition": "inline"},
+        )
+    except httpx.HTTPStatusError as e:
+        print(f"Sarvam TTS error: {e.response.status_code} - {e.response.text}")
+        raise HTTPException(502, f"TTS service error: {e.response.status_code}")
+    except Exception as e:
+        print(f"TTS error: {e}")
+        raise HTTPException(500, "Failed to generate speech")

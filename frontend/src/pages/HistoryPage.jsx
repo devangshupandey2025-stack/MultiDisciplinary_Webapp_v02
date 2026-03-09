@@ -1,15 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Leaf, AlertCircle, ChevronDown, ChevronUp, Download, Volume2, Square, Play, Pause, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb } from 'lucide-react';
-import { getHistory } from '../services/api';
+import { Clock, Leaf, AlertCircle, ChevronDown, ChevronUp, Download, Volume2, Square, Play, Pause, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Loader } from 'lucide-react';
+import { getHistory, generateTTS } from '../services/api';
 import { getUser } from '../services/supabase';
 import { useLanguage } from '../i18n/LanguageContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-const LANG_TO_BCP47 = {
-  en: 'en-US', hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN',
-  bn: 'bn-IN', mr: 'mr-IN', kn: 'kn-IN', gu: 'gu-IN',
-};
 
 export default function HistoryPage() {
   const { t, lang } = useLanguage();
@@ -155,11 +150,16 @@ function HistoryItemDetails({ item, validation, t, lang }) {
   const [isPaused, setIsPaused] = useState(false);
   const [speechRate, setSpeechRate] = useState(1);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isLoadingTTS, setIsLoadingTTS] = useState(false);
   const detailsRef = useRef(null);
-  const utteranceRef = useRef(null);
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
 
   useEffect(() => {
-    return () => window.speechSynthesis?.cancel();
+    return () => {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      if (audioUrlRef.current) { URL.revokeObjectURL(audioUrlRef.current); }
+    };
   }, []);
 
   function getReportText() {
@@ -228,43 +228,47 @@ function HistoryItemDetails({ item, validation, t, lang }) {
     }
   }
 
-  function startSpeech(rate) {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    const text = getReportText();
-    if (!text) return;
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_TO_BCP47[lang] || 'en-US';
-    utterance.rate = rate;
-    utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
-    utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
-    utteranceRef.current = utterance;
-    synth.speak(utterance);
-    setIsSpeaking(true);
-    setIsPaused(false);
-  }
-
-  function handleSpeak() {
+  async function handleSpeak() {
     if (isSpeaking) {
-      window.speechSynthesis?.cancel();
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
       setIsSpeaking(false);
       setIsPaused(false);
       return;
     }
-    startSpeech(speechRate);
+    const text = getReportText();
+    if (!text) return;
+    setIsLoadingTTS(true);
+    try {
+      const blob = await generateTTS(text, lang, speechRate);
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
+      const audio = new Audio(url);
+      audio.playbackRate = speechRate;
+      audio.onended = () => { setIsSpeaking(false); setIsPaused(false); };
+      audio.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
+      audioRef.current = audio;
+      await audio.play();
+      setIsSpeaking(true);
+      setIsPaused(false);
+    } catch (err) {
+      console.error('TTS error:', err);
+    } finally {
+      setIsLoadingTTS(false);
+    }
   }
 
   function handlePauseResume() {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    if (isPaused) { synth.resume(); setIsPaused(false); }
-    else { synth.pause(); setIsPaused(true); }
+    if (!audioRef.current) return;
+    if (isPaused) { audioRef.current.play(); setIsPaused(false); }
+    else { audioRef.current.pause(); setIsPaused(true); }
   }
 
   function handleSpeedChange(rate) {
     setSpeechRate(rate);
-    if (isSpeaking) startSpeech(rate);
+    if (audioRef.current && isSpeaking) {
+      audioRef.current.playbackRate = rate;
+    }
   }
 
   return (
@@ -284,11 +288,12 @@ function HistoryItemDetails({ item, validation, t, lang }) {
         {!isSpeaking ? (
           <button
             onClick={handleSpeak}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+            disabled={isLoadingTTS}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80 disabled:opacity-50"
             style={{ background: 'var(--color-warm)', color: 'var(--color-forest)' }}
           >
-            <Volume2 className="w-3.5 h-3.5" />
-            {t('result_listen')}
+            {isLoadingTTS ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Volume2 className="w-3.5 h-3.5" />}
+            {isLoadingTTS ? '...' : t('result_listen')}
           </button>
         ) : (
           <div className="flex items-center gap-1.5 rounded-full px-2 py-1" style={{ background: 'rgba(107,143,113,0.08)', border: '1px solid rgba(168,197,170,0.25)' }}>

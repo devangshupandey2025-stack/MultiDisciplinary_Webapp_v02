@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause, Loader } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { generateTTS } from '../services/api';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const COLORS = ['#2C3E2D', '#6B8F71', '#A8C5AA', '#C9A96E', '#8B7355'];
-
-const LANG_TO_BCP47 = {
-  en: 'en-US', hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN',
-  bn: 'bn-IN', mr: 'mr-IN', kn: 'kn-IN', gu: 'gu-IN',
-};
 
 export default function PredictionResult({ result, imageUrl }) {
   const { t, lang } = useLanguage();
@@ -18,11 +14,16 @@ export default function PredictionResult({ result, imageUrl }) {
   const [isPaused, setIsPaused] = useState(false);
   const [speechRate, setSpeechRate] = useState(1);
   const [isDownloading, setIsDownloading] = useState(false);
-  const utteranceRef = useRef(null);
+  const [isLoadingTTS, setIsLoadingTTS] = useState(false);
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
   const reportRef = useRef(null);
 
   useEffect(() => {
-    return () => window.speechSynthesis?.cancel();
+    return () => {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      if (audioUrlRef.current) { URL.revokeObjectURL(audioUrlRef.current); }
+    };
   }, []);
 
   if (!result) return null;
@@ -111,51 +112,55 @@ export default function PredictionResult({ result, imageUrl }) {
     }
   }
 
-  function startSpeech(rate) {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-
-    const text = getReportText();
-    if (!text) return;
-
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_TO_BCP47[lang] || 'en-US';
-    utterance.rate = rate;
-    utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
-    utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
-    utteranceRef.current = utterance;
-    synth.speak(utterance);
-    setIsSpeaking(true);
-    setIsPaused(false);
-  }
-
-  function handleSpeak() {
+  async function handleSpeak() {
     if (isSpeaking) {
-      window.speechSynthesis?.cancel();
+      // Stop
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
       setIsSpeaking(false);
       setIsPaused(false);
       return;
     }
-    startSpeech(speechRate);
+
+    const text = getReportText();
+    if (!text) return;
+
+    setIsLoadingTTS(true);
+    try {
+      const blob = await generateTTS(text, lang, speechRate);
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
+
+      const audio = new Audio(url);
+      audio.playbackRate = speechRate;
+      audio.onended = () => { setIsSpeaking(false); setIsPaused(false); };
+      audio.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
+      audioRef.current = audio;
+      await audio.play();
+      setIsSpeaking(true);
+      setIsPaused(false);
+    } catch (err) {
+      console.error('TTS error:', err);
+    } finally {
+      setIsLoadingTTS(false);
+    }
   }
 
   function handlePauseResume() {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
+    if (!audioRef.current) return;
     if (isPaused) {
-      synth.resume();
+      audioRef.current.play();
       setIsPaused(false);
     } else {
-      synth.pause();
+      audioRef.current.pause();
       setIsPaused(true);
     }
   }
 
   function handleSpeedChange(rate) {
     setSpeechRate(rate);
-    if (isSpeaking) {
-      startSpeech(rate);
+    if (audioRef.current && isSpeaking) {
+      audioRef.current.playbackRate = rate;
     }
   }
 
@@ -298,12 +303,13 @@ export default function PredictionResult({ result, imageUrl }) {
             {!isSpeaking ? (
               <button
                 onClick={handleSpeak}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                disabled={isLoadingTTS}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80 disabled:opacity-50"
                 style={{ background: 'var(--color-warm)', color: 'var(--color-forest)' }}
                 title={t('result_listen')}
               >
-                <Volume2 className="w-3.5 h-3.5" />
-                {t('result_listen')}
+                {isLoadingTTS ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Volume2 className="w-3.5 h-3.5" />}
+                {isLoadingTTS ? '...' : t('result_listen')}
               </button>
             ) : (
               <div className="flex items-center gap-1.5 rounded-full px-2 py-1" style={{ background: 'rgba(107,143,113,0.08)', border: '1px solid rgba(168,197,170,0.25)' }}>

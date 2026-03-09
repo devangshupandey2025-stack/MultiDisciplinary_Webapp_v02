@@ -26,6 +26,8 @@ services:
         value: checkpoints
       - key: GEMINI_API_KEY
         sync: false
+      - key: SARVAM_API_KEY
+        sync: false
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: FRONTEND_URL
