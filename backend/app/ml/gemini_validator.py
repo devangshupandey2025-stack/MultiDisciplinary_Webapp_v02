@@ -5,11 +5,17 @@ Validates MobileNetV3 predictions using Google Gemini with multimodal (image + t
 import io
 import json
 import os
+import time
 import asyncio
 from typing import Optional
 
 from google import genai
 from google.genai import types
+
+
+MAX_RETRIES = 3
+RETRY_BACKOFF = [1, 2, 4]  # seconds between retries
+AVAILABILITY_RECHECK_INTERVAL = 300  # re-check every 5 minutes if unavailable
 
 
 SYSTEM_PROMPT = """You are an expert plant pathologist AI assistant. Your role is to cross-validate 
@@ -111,9 +117,10 @@ def _parse_gemini_response(response_text: str) -> Optional[dict]:
 class GeminiValidator:
     """Validates MobileNetV3 predictions using Google Gemini with multimodal input."""
 
-    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash"):
         self.model_name = model_name
         self._available = False
+        self._last_availability_check = 0
         try:
             self._client = genai.Client(api_key=api_key)
             self._available = True
@@ -136,60 +143,99 @@ class GeminiValidator:
                 ),
             )
             self._available = response.text is not None
+            self._last_availability_check = time.time()
             if self._available:
                 print(f"✓ Gemini API reachable: {self.model_name}")
             return self._available
         except Exception as e:
             print(f"⚠️  Gemini API not reachable: {e}")
             self._available = False
+            self._last_availability_check = time.time()
             return False
+
+    def _ensure_available(self) -> bool:
+        """Re-check availability if previously unavailable and enough time has passed."""
+        if self._available:
+            return True
+        if not self._client:
+            return False
+        elapsed = time.time() - self._last_availability_check
+        if elapsed >= AVAILABILITY_RECHECK_INTERVAL:
+            print("🔄 Re-checking Gemini availability...")
+            return self.check_availability()
+        return False
 
     @property
     def is_available(self) -> bool:
-        return self._available
+        return self._ensure_available()
 
     def validate(
         self, prediction: dict, image_metadata: dict, image_bytes: bytes = None
     ) -> Optional[dict]:
         """
         Validate a MobileNet prediction with Gemini (multimodal: image + text).
-        Returns parsed validation dict or None if unavailable/failed.
+        Retries up to MAX_RETRIES times on transient failures.
         """
-        if not self._available or not self._client:
+        if not self._ensure_available():
             return None
 
         prompt_text = _build_prompt(prediction, image_metadata)
 
         contents = []
-        # Include the actual leaf image if available
         if image_bytes:
             contents.append(
                 types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
             )
         contents.append(prompt_text)
 
-        try:
-            response = self._client.models.generate_content(
-                model=self.model_name,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    temperature=0.3,
-                    max_output_tokens=4096,
-                ),
-            )
-            content = response.text
-            if not content:
-                print("Gemini returned empty response")
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = self._client.models.generate_content(
+                    model=self.model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        temperature=0.3,
+                        max_output_tokens=4096,
+                    ),
+                )
+                content = response.text
+                if not content:
+                    print(f"Gemini returned empty response (attempt {attempt + 1})")
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(RETRY_BACKOFF[attempt])
+                        continue
+                    return None
+
+                parsed = _parse_gemini_response(content)
+                if parsed is None:
+                    print(f"Gemini response parse failed (attempt {attempt + 1}). Raw: {content[:300]}")
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(RETRY_BACKOFF[attempt])
+                        continue
+                return parsed
+
+            except Exception as e:
+                error_str = str(e).lower()
+                is_rate_limit = "429" in error_str or "rate" in error_str or "quota" in error_str
+                print(f"Gemini validation error (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+
+                if is_rate_limit:
+                    wait = RETRY_BACKOFF[attempt] * 2
+                    print(f"  → Rate limited, waiting {wait}s before retry...")
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(wait)
+                        continue
+                    self._available = False
+                    self._last_availability_check = time.time()
+                    return None
+
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_BACKOFF[attempt])
+                    continue
                 return None
 
-            parsed = _parse_gemini_response(content)
-            if parsed is None:
-                print(f"Gemini response could not be parsed. Raw (first 500 chars): {content[:500]}")
-            return parsed
-        except Exception as e:
-            print(f"Gemini validation failed: {e}")
-            return None
+        return None
 
     async def validate_async(
         self, prediction: dict, image_metadata: dict, image_bytes: bytes = None
@@ -210,6 +256,6 @@ def get_validator() -> GeminiValidator:
     global _validator
     if _validator is None:
         api_key = os.getenv("GEMINI_API_KEY", "")
-        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         _validator = GeminiValidator(api_key=api_key, model_name=model)
     return _validator
