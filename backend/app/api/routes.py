@@ -79,7 +79,10 @@ async def predict_disease(
             image_url = supabase_service.upload_image(
                 contents, file.filename or "image.jpg", user["id"]
             )
-            supabase_service.save_prediction(user["id"], result, image_url)
+            supabase_service.save_prediction(
+                user["id"], result, image_url,
+                gemini_validation=gemini_validation.model_dump() if gemini_validation else None
+            )
 
     return PredictionResponse(
         **{"class": result["class"]},

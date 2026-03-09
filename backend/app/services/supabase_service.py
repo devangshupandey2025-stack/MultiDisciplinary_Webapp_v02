@@ -89,7 +89,8 @@ class SupabaseService:
 
     # --- Prediction History ---
     def save_prediction(self, user_id: str, prediction: dict,
-                        image_url: Optional[str] = None) -> dict:
+                        image_url: Optional[str] = None,
+                        gemini_validation: Optional[dict] = None) -> dict:
         """Save a prediction to history."""
         if not self.is_available:
             return {"status": "skipped", "reason": "supabase_not_configured"}
@@ -103,6 +104,8 @@ class SupabaseService:
                 "image_url": image_url,
                 "created_at": datetime.utcnow().isoformat(),
             }
+            if gemini_validation is not None:
+                data["gemini_validation"] = json.dumps(gemini_validation)
             result = self._admin_client.table("predictions").insert(data).execute()
             return {"status": "saved", "id": result.data[0]["id"] if result.data else None}
         except Exception as e:

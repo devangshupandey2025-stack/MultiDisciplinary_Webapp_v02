@@ -68,6 +68,7 @@ const translations = {
     history_loading: 'Loading history...',
     history_confidence: 'Confidence',
     history_uncertainty: 'Uncertainty',
+    history_no_validation: 'No AI validation data available for this prediction.',
 
     // About
     about_title: 'About PlantGuard AI',
@@ -174,6 +175,7 @@ const translations = {
     history_loading: 'इतिहास लोड हो रहा है...',
     history_confidence: 'विश्वास',
     history_uncertainty: 'अनिश्चितता',
+    history_no_validation: 'इस भविष्यवाणी के लिए AI सत्यापन डेटा उपलब्ध नहीं है।',
 
     about_title: 'प्लांटगार्ड AI के बारे में',
     about_subtitle: 'विश्वसनीय निदान के लिए डीप लर्निंग और AI क्रॉस-वैलिडेशन का संयोजन।',
@@ -275,6 +277,7 @@ const translations = {
     history_loading: 'வரலாறு ஏற்றப்படுகிறது...',
     history_confidence: 'நம்பிக்கை',
     history_uncertainty: 'நிச்சயமின்மை',
+    history_no_validation: 'இந்த கணிப்புக்கான AI சரிபார்ப்பு தரவு கிடைக்கவில்லை.',
 
     about_title: 'PlantGuard AI பற்றி',
     about_subtitle: 'நம்பகமான கண்டறிதலுக்கு ஆழ்ந்த கற்றல் மற்றும் AI சரிபார்ப்பு இணைப்பு.',
@@ -376,6 +379,7 @@ const translations = {
     history_loading: 'చరిత్ర లోడ్ అవుతోంది...',
     history_confidence: 'నమ్మకం',
     history_uncertainty: 'అనిశ్చితత',
+    history_no_validation: 'ఈ అంచనాకు AI ధృవీకరణ డేటా అందుబాటులో లేదు.',
 
     about_title: 'PlantGuard AI గురించి',
     about_subtitle: 'విశ్వసనీయ నిర్ధారణ కోసం డీప్ లర్నింగ్ మరియు AI క్రాస్-వాలిడేషన్ కలయిక.',
@@ -477,6 +481,7 @@ const translations = {
     history_loading: 'ইতিহাস লোড হচ্ছে...',
     history_confidence: 'আত্মবিশ্বাস',
     history_uncertainty: 'অনিশ্চয়তা',
+    history_no_validation: 'এই পূর্বাভাসের জন্য AI যাচাই তথ্য উপলব্ধ নেই।',
 
     about_title: 'PlantGuard AI সম্পর্কে',
     about_subtitle: 'নির্ভরযোগ্য রোগ নির্ণয়ের জন্য ডিপ লার্নিং ও AI ক্রস-ভ্যালিডেশনের সমন্বয়।',
@@ -578,6 +583,7 @@ const translations = {
     history_loading: 'इतिहास लोड होत आहे...',
     history_confidence: 'विश्वास',
     history_uncertainty: 'अनिश्चितता',
+    history_no_validation: 'या अंदाजासाठी AI पडताळणी डेटा उपलब्ध नाही.',
 
     about_title: 'PlantGuard AI बद्दल',
     about_subtitle: 'विश्वसनीय निदानासाठी डीप लर्निंग आणि AI क्रॉस-व्हॅलिडेशनचे संयोजन.',
@@ -679,6 +685,7 @@ const translations = {
     history_loading: 'ಇತಿಹಾಸ ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
     history_confidence: 'ವಿಶ್ವಾಸ',
     history_uncertainty: 'ಅನಿಶ್ಚಿತತೆ',
+    history_no_validation: 'ಈ ಊಹೆಗೆ AI ಪರಿಶೀಲನೆ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ.',
 
     about_title: 'PlantGuard AI ಕುರಿತು',
     about_subtitle: 'ವಿಶ್ವಾಸಾರ್ಹ ರೋಗ ನಿರ್ಣಯಕ್ಕೆ ಡೀಪ್ ಲರ್ನಿಂಗ್ ಮತ್ತು AI ಕ್ರಾಸ್-ವ್ಯಾಲಿಡೇಶನ್.',
@@ -780,6 +787,7 @@ const translations = {
     history_loading: 'ઈતિહાસ લોડ થઈ રહ્યો છે...',
     history_confidence: 'વિશ્વાસ',
     history_uncertainty: 'અનિશ્ચિતતા',
+    history_no_validation: 'આ આગાહી માટે AI ચકાસણી ડેટા ઉપલબ્ધ નથી.',
 
     about_title: 'PlantGuard AI વિશે',
     about_subtitle: 'વિશ્વસનીય નિદાન માટે ડીપ લર્નિંગ અને AI ક્રોસ-વેલિડેશનનું સંયોજન.',
