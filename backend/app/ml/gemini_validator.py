@@ -117,7 +117,7 @@ def _parse_gemini_response(response_text: str) -> Optional[dict]:
 class GeminiValidator:
     """Validates MobileNetV3 predictions using Google Gemini with multimodal input."""
 
-    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash"):
+    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash"):
         self.model_name = model_name
         self._available = False
         self._last_availability_check = 0
@@ -256,6 +256,6 @@ def get_validator() -> GeminiValidator:
     global _validator
     if _validator is None:
         api_key = os.getenv("GEMINI_API_KEY", "")
-        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         _validator = GeminiValidator(api_key=api_key, model_name=model)
     return _validator
