@@ -16,7 +16,7 @@ COPY backend/ ./backend/
 COPY ml_pipeline/ ./ml_pipeline/
 
 # Copy model checkpoints if available
-COPY checkpoints/ ./checkpoints/ 2>/dev/null || true
+COPY checkpoints/ ./checkpoints/
 
 ENV PYTHONPATH=/app
 ENV PORT=8000
