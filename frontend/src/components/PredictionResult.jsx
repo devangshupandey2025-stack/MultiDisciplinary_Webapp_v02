@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const COLORS = ['#2C3E2D', '#6B8F71', '#A8C5AA', '#C9A96E', '#8B7355'];
 
@@ -13,7 +15,9 @@ const LANG_TO_BCP47 = {
 export default function PredictionResult({ result, imageUrl }) {
   const { t, lang } = useLanguage();
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const utteranceRef = useRef(null);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     return () => window.speechSynthesis?.cancel();
@@ -45,53 +49,64 @@ export default function PredictionResult({ result, imageUrl }) {
     return parts.join('. ');
   }
 
-  function handleDownload() {
-    const disease = formatClassName(result.class);
-    const plant = result.class?.split('___')[0]?.replace(/_/g, ' ') || '';
-    const date = new Date().toLocaleDateString();
+  async function handleDownload() {
+    const el = reportRef.current;
+    if (!el || isDownloading) return;
+    setIsDownloading(true);
 
-    let text = '';
-    text += '═══════════════════════════════════════════\n';
-    text += '       PlantGuard AI — Validation Report\n';
-    text += '═══════════════════════════════════════════\n\n';
-    text += `${t('result_disease')}: ${disease}\n`;
-    text += `${t('result_plant')}: ${plant}\n`;
-    text += `${t('result_confidence')}: ${(result.probability * 100).toFixed(1)}%\n`;
-    text += `${t('result_uncertainty')}: ${(result.uncertainty * 100).toFixed(1)}%\n\n`;
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#FAFAF5',
+        logging: false,
+      });
 
-    if (validation) {
-      text += '───────────────────────────────────────────\n';
-      text += `  ${t('result_validation_title')}\n`;
-      text += '───────────────────────────────────────────\n\n';
-      text += `${validation.agrees ? '✓ ' + t('result_agrees') : '✗ ' + t('result_disagrees')}\n\n`;
-      text += `${validation.summary}\n\n`;
-      text += `${t('result_confidence_assess')}:\n  ${validation.confidence_assessment}\n\n`;
-      text += `${t('result_reasoning')}:\n  ${validation.reasoning}\n\n`;
-      if (validation.alternative_suggestions?.length > 0) {
-        text += `${t('result_alternatives')}:\n`;
-        validation.alternative_suggestions.forEach(alt => {
-          text += `  • ${formatClassName(alt)}\n`;
-        });
-        text += '\n';
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const availableWidth = pageWidth - 2 * margin;
+
+      // Header
+      pdf.setFontSize(16);
+      pdf.setTextColor(44, 62, 45);
+      pdf.text('PlantGuard AI', pageWidth / 2, 14, { align: 'center' });
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 143, 113);
+      pdf.text('Validation Report', pageWidth / 2, 20, { align: 'center' });
+      pdf.setDrawColor(168, 197, 170);
+      pdf.line(margin, 23, pageWidth - margin, 23);
+
+      // Report image
+      const startY = 27;
+      const imgWidth = availableWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const maxHeight = pageHeight - startY - 15;
+
+      if (imgHeight > maxHeight) {
+        const scale = maxHeight / imgHeight;
+        const scaledW = imgWidth * scale;
+        const scaledH = imgHeight * scale;
+        pdf.addImage(imgData, 'PNG', (pageWidth - scaledW) / 2, startY, scaledW, scaledH);
+      } else {
+        pdf.addImage(imgData, 'PNG', margin, startY, imgWidth, imgHeight);
       }
-      if (validation.treatment_advice) {
-        text += `${t('result_treatment')}:\n  ${validation.treatment_advice}\n\n`;
-      }
+
+      // Footer
+      pdf.setFontSize(7);
+      pdf.setTextColor(160, 160, 160);
+      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+
+      const disease = formatClassName(result.class);
+      pdf.save(`PlantGuard_Report_${disease.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+    } catch {
+      // Fallback: open print dialog
+      window.print();
+    } finally {
+      setIsDownloading(false);
     }
-
-    text += '═══════════════════════════════════════════\n';
-    text += `PlantGuard AI | ${date}\n`;
-    text += '═══════════════════════════════════════════\n';
-
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `PlantGuard_Report_${disease.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 
   function handleSpeak() {
@@ -125,7 +140,7 @@ export default function PredictionResult({ result, imageUrl }) {
   }));
 
   return (
-    <div className="space-y-6">
+    <div ref={reportRef} className="space-y-6">
       {/* Main prediction card */}
       <div className="glass-card p-6 md:p-8 space-y-6">
         <div className="flex flex-col md:flex-row gap-6">
@@ -245,12 +260,13 @@ export default function PredictionResult({ result, imageUrl }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleDownload}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+              disabled={isDownloading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80 disabled:opacity-50"
               style={{ background: 'var(--color-warm)', color: 'var(--color-forest)' }}
               title={t('result_download')}
             >
-              <Download className="w-3.5 h-3.5" />
-              {t('result_download')}
+              <Download className={`w-3.5 h-3.5 ${isDownloading ? 'animate-pulse' : ''}`} />
+              {isDownloading ? '...' : t('result_download')}
             </button>
             <button
               onClick={handleSpeak}
