@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HelpCircle, Bot, ThumbsUp, ThumbsDown, Pill, Lightbulb, Download, Volume2, Square, Play, Pause } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -15,6 +15,8 @@ const LANG_TO_BCP47 = {
 export default function PredictionResult({ result, imageUrl }) {
   const { t, lang } = useLanguage();
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speechRate, setSpeechRate] = useState(1);
   const [isDownloading, setIsDownloading] = useState(false);
   const utteranceRef = useRef(null);
   const reportRef = useRef(null);
@@ -109,28 +111,52 @@ export default function PredictionResult({ result, imageUrl }) {
     }
   }
 
-  function handleSpeak() {
+  function startSpeech(rate) {
     const synth = window.speechSynthesis;
     if (!synth) return;
-
-    if (isSpeaking) {
-      synth.cancel();
-      setIsSpeaking(false);
-      return;
-    }
 
     const text = getReportText();
     if (!text) return;
 
+    synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = LANG_TO_BCP47[lang] || 'en-US';
-    utterance.rate = 0.9;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.rate = rate;
+    utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
+    utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
     utteranceRef.current = utterance;
-    synth.cancel();
     synth.speak(utterance);
     setIsSpeaking(true);
+    setIsPaused(false);
+  }
+
+  function handleSpeak() {
+    if (isSpeaking) {
+      window.speechSynthesis?.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      return;
+    }
+    startSpeech(speechRate);
+  }
+
+  function handlePauseResume() {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    if (isPaused) {
+      synth.resume();
+      setIsPaused(false);
+    } else {
+      synth.pause();
+      setIsPaused(true);
+    }
+  }
+
+  function handleSpeedChange(rate) {
+    setSpeechRate(rate);
+    if (isSpeaking) {
+      startSpeech(rate);
+    }
   }
 
   const chartData = (result.top_k || []).map((item, i) => ({
@@ -268,15 +294,51 @@ export default function PredictionResult({ result, imageUrl }) {
               <Download className={`w-3.5 h-3.5 ${isDownloading ? 'animate-pulse' : ''}`} />
               {isDownloading ? '...' : t('result_download')}
             </button>
-            <button
-              onClick={handleSpeak}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80 ${isSpeaking ? 'badge-danger' : ''}`}
-              style={isSpeaking ? {} : { background: 'var(--color-warm)', color: 'var(--color-forest)' }}
-              title={isSpeaking ? t('result_stop_listen') : t('result_listen')}
-            >
-              {isSpeaking ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              {isSpeaking ? t('result_stop_listen') : t('result_listen')}
-            </button>
+
+            {!isSpeaking ? (
+              <button
+                onClick={handleSpeak}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                style={{ background: 'var(--color-warm)', color: 'var(--color-forest)' }}
+                title={t('result_listen')}
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                {t('result_listen')}
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-full px-2 py-1" style={{ background: 'rgba(107,143,113,0.08)', border: '1px solid rgba(168,197,170,0.25)' }}>
+                <button
+                  onClick={handlePauseResume}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors hover:opacity-80"
+                  style={{ background: 'var(--color-warm)', color: 'var(--color-forest)' }}
+                  title={isPaused ? t('result_resume') : t('result_pause')}
+                >
+                  {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={handleSpeak}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full badge-danger transition-colors hover:opacity-80"
+                  title={t('result_stop_listen')}
+                >
+                  <Square className="w-3 h-3" />
+                </button>
+                <div className="flex items-center gap-0.5 ml-1">
+                  {[0.5, 1, 1.5, 2].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => handleSpeedChange(rate)}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors"
+                      style={{
+                        background: speechRate === rate ? 'var(--color-forest)' : 'transparent',
+                        color: speechRate === rate ? '#fff' : 'var(--color-text-muted)',
+                      }}
+                    >
+                      {rate}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Summary */}

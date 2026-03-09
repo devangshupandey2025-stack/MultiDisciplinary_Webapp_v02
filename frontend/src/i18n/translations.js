@@ -57,6 +57,8 @@ const translations = {
     result_download: 'Download Report',
     result_listen: 'Listen',
     result_stop_listen: 'Stop',
+    result_pause: 'Pause',
+    result_resume: 'Resume',
 
     // History
     history_title: 'Prediction History',
@@ -162,6 +164,8 @@ const translations = {
     result_download: 'रिपोर्ट डाउनलोड करें',
     result_listen: 'सुनें',
     result_stop_listen: 'रोकें',
+    result_pause: 'रुकें',
+    result_resume: 'जारी रखें',
 
     history_title: 'भविष्यवाणी इतिहास',
     history_empty: 'अभी तक कोई भविष्यवाणी नहीं। शुरू करने के लिए पत्ती की तस्वीर अपलोड करें!',
@@ -261,6 +265,8 @@ const translations = {
     result_download: 'அறிக்கை பதிவிறக்கம்',
     result_listen: 'கேளுங்கள்',
     result_stop_listen: 'நிறுத்து',
+    result_pause: 'இடைநிறுத்து',
+    result_resume: 'தொடரவும்',
 
     history_title: 'கணிப்பு வரலாறு',
     history_empty: 'இன்னும் கணிப்புகள் இல்லை. தொடங்க இலை படத்தை பதிவேற்றுங்கள்!',
@@ -360,6 +366,8 @@ const translations = {
     result_download: 'నివేదిక డౌన్‌లోడ్',
     result_listen: 'వినండి',
     result_stop_listen: 'ఆపు',
+    result_pause: 'విరామం',
+    result_resume: 'కొనసాగించు',
 
     history_title: 'అంచనా చరిత్ర',
     history_empty: 'ఇంకా అంచనాలు లేవు. ప్రారంభించడానికి ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి!',
@@ -459,6 +467,8 @@ const translations = {
     result_download: 'প্রতিবেদন ডাউনলোড',
     result_listen: 'শুনুন',
     result_stop_listen: 'থামুন',
+    result_pause: 'বিরতি',
+    result_resume: 'চালিয়ে যান',
 
     history_title: 'পূর্বাভাস ইতিহাস',
     history_empty: 'এখনও কোনো পূর্বাভাস নেই। শুরু করতে পাতার ছবি আপলোড করুন!',
@@ -558,6 +568,8 @@ const translations = {
     result_download: 'अहवाल डाउनलोड',
     result_listen: 'ऐका',
     result_stop_listen: 'थांबा',
+    result_pause: 'विराम',
+    result_resume: 'पुढे चालू ठेवा',
 
     history_title: 'अंदाज इतिहास',
     history_empty: 'अद्याप अंदाज नाहीत. सुरू करण्यासाठी पानाचे चित्र अपलोड करा!',
@@ -657,6 +669,8 @@ const translations = {
     result_download: 'ವರದಿ ಡೌನ್‌ಲೋಡ್',
     result_listen: 'ಕೇಳಿ',
     result_stop_listen: 'ನಿಲ್ಲಿಸಿ',
+    result_pause: 'ವಿರಾಮ',
+    result_resume: 'ಮುಂದುವರಿಸಿ',
 
     history_title: 'ಊಹೆ ಇತಿಹಾಸ',
     history_empty: 'ಇನ್ನೂ ಊಹೆಗಳಿಲ್ಲ. ಪ್ರಾರಂಭಿಸಲು ಎಲೆಯ ಚಿತ್ರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ!',
@@ -756,6 +770,8 @@ const translations = {
     result_download: 'અહેવાલ ડાઉનલોડ',
     result_listen: 'સાંભળો',
     result_stop_listen: 'બંધ કરો',
+    result_pause: 'વિરામ',
+    result_resume: 'ચાલુ રાખો',
 
     history_title: 'આગાહી ઈતિહાસ',
     history_empty: 'હજુ સુધી કોઈ આગાહી નથી. શરૂ કરવા પાનનું ચિત્ર અપલોડ કરો!',
