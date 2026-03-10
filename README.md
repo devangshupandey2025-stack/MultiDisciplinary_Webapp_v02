@@ -18,7 +18,7 @@ PlantGuard AI is a full-stack web application that detects plant leaf diseases f
 
 | 🔬 ML Model | 🤖 LLM Cross-validation | 🔊 TTS | 🌐 Languages | 📱 PWA |
 |:-----------:|:----------------------:|:------:|:------------:|:------:|
-| MobileNetV3 | Gemini 2.0 Flash | Sarvam AI | 8 Indian languages | Installable |
+| MobileNetV3 | Gemini 2.5 Flash | Sarvam AI | 8 Indian languages | Installable |
 
 </div>
 
