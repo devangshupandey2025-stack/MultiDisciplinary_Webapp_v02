@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSession } from './supabase';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -7,8 +8,18 @@ const api = axios.create({
   timeout: 120000,
 });
 
-// Add auth token to requests
-api.interceptors.request.use((config) => {
+// Add auth token to requests — always fetch fresh token from Supabase session
+api.interceptors.request.use(async (config) => {
+  try {
+    const session = await getSession();
+    if (session?.access_token) {
+      localStorage.setItem('access_token', session.access_token);
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+      return config;
+    }
+  } catch {
+    // Fall back to stored token
+  }
   const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

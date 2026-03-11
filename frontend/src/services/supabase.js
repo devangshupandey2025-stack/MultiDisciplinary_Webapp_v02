@@ -34,6 +34,12 @@ export const getUser = async () => {
   return user;
 };
 
+export const getSession = async () => {
+  if (!supabase) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+};
+
 export const onAuthStateChange = (callback) => {
   if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } };
   return supabase.auth.onAuthStateChange(callback);

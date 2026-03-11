@@ -18,6 +18,11 @@ export default function Layout({ children }) {
     getUser().then(setUser);
     const { data } = onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      if (session?.access_token) {
+        localStorage.setItem('access_token', session.access_token);
+      } else {
+        localStorage.removeItem('access_token');
+      }
     });
     return () => data.subscription.unsubscribe();
   }, []);

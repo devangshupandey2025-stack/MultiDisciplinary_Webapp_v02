@@ -74,12 +74,33 @@ export default function PredictionResult({ result, imageUrl }) {
     setIsDownloading(true);
 
     try {
+      // Pre-convert images to base64 so html2canvas can capture them reliably
+      const images = el.querySelectorAll('img');
+      const originalSrcs = [];
+      await Promise.all(Array.from(images).map(async (img, i) => {
+        originalSrcs[i] = img.src;
+        if (img.src.startsWith('data:')) return;
+        try {
+          const res = await fetch(img.src);
+          const blob = await res.blob();
+          const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          img.src = dataUrl;
+        } catch { /* keep original src */ }
+      }));
+
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#FAFAF5',
         logging: false,
       });
+
+      // Restore original image sources
+      images.forEach((img, i) => { if (originalSrcs[i]) img.src = originalSrcs[i]; });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
