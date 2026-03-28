@@ -82,6 +82,12 @@ async def root():
     }
 
 
+@app.get("/health")
+async def root_health():
+    """Simple health check for load balancers (always returns OK if app is running)."""
+    return {"status": "ok"}
+
+
 # Optional: Prometheus metrics
 try:
     from prometheus_client import make_asgi_app
