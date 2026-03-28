@@ -19,9 +19,8 @@ COPY ml_pipeline/ ./ml_pipeline/
 COPY checkpoints/ ./checkpoints/
 
 ENV PYTHONPATH=/app
-ENV PORT=8000
 
 EXPOSE 8000
 
-# Use shell form to expand $PORT variable
-CMD uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Use /bin/sh -c to properly expand $PORT
+CMD ["/bin/sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
