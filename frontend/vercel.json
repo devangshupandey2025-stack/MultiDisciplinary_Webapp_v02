@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://plantguard-api.onrender.com/api/:path*"
+      "destination": "https://devpandey123-plantguard-api.hf.space/api/:path*"
     }
   ]
 }
