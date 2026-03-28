@@ -18,9 +18,12 @@ COPY ml_pipeline/ ./ml_pipeline/
 # Copy model checkpoints if available
 COPY checkpoints/ ./checkpoints/
 
+# Make start script executable
+RUN chmod +x backend/start.sh
+
 ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
-# Use /bin/sh -c to properly expand $PORT
-CMD ["/bin/sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use the startup script
+CMD ["bash", "backend/start.sh"]

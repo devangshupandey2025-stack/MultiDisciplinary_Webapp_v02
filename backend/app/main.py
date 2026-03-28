@@ -7,8 +7,9 @@ Start:
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.app.api.routes import router
 from backend.app.ml.predictor import get_predictor
@@ -20,6 +21,7 @@ from backend.app.services.supabase_service import supabase_service
 async def lifespan(app: FastAPI):
     """Load MobileNetV3 model and check Gemini API on startup."""
     print("Starting Plant Disease Detection API...")
+    print(f"PORT: {os.environ.get('PORT', 'not set')}")
 
     # Initialize Supabase
     supabase_service.initialize()
@@ -45,6 +47,7 @@ async def lifespan(app: FastAPI):
         print("⚠️  Gemini API not available — predictions will work without cross-validation.")
         print("   Check your GEMINI_API_KEY in .env")
 
+    print("✓ App startup complete, ready for requests")
     yield
     print("Shutting down...")
 
@@ -56,14 +59,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS
+# CORS - allow all origins for healthchecks and API access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        os.getenv("FRONTEND_URL", ""),
-    ],
+    allow_origins=["*"],  # Allow all origins including healthcheck.railway.app
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,7 +84,7 @@ async def root():
 @app.get("/health")
 async def root_health():
     """Simple health check for load balancers (always returns OK if app is running)."""
-    return {"status": "ok"}
+    return JSONResponse(content={"status": "ok"}, status_code=200)
 
 
 # Optional: Prometheus metrics
