@@ -6,6 +6,7 @@ Start:
   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 """
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,13 +18,15 @@ from backend.app.ml.predictor import get_predictor
 from backend.app.ml.gemini_validator import get_validator
 from backend.app.services.supabase_service import supabase_service
 
+# Track if models are loaded
+_models_ready = False
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Load MobileNetV3 model and check Gemini API on startup."""
-    print("Starting Plant Disease Detection API...")
-    print(f"PORT: {os.environ.get('PORT', 'not set')}")
 
+async def load_models_background():
+    """Load models in background after server starts."""
+    global _models_ready
+    print("Loading models in background...")
+    
     # Initialize Supabase
     supabase_service.initialize()
 
@@ -46,9 +49,21 @@ async def lifespan(app: FastAPI):
     validator.check_availability()
     if not validator.is_available:
         print("⚠️  Gemini API not available — predictions will work without cross-validation.")
-        print("   Check your GEMINI_API_KEY in .env")
 
-    print("✓ App startup complete, ready for requests")
+    _models_ready = True
+    print("✓ Models loaded successfully")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start server immediately, load models in background."""
+    print("Starting Plant Disease Detection API...")
+    print(f"PORT: {os.environ.get('PORT', 'not set')}")
+    print("✓ Server ready for healthchecks")
+    
+    # Start model loading in background (non-blocking)
+    asyncio.create_task(load_models_background())
+    
     yield
     print("Shutting down...")
 
@@ -63,10 +78,10 @@ app = FastAPI(
 # Trust all hosts - required for Railway healthcheck from healthcheck.railway.app
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["*"],  # Allow all hosts including healthcheck.railway.app
+    allowed_hosts=["*"],
 )
 
-# CORS - allow all origins for healthchecks and API access
+# CORS - allow all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
